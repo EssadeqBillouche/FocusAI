@@ -21,3 +21,19 @@ export const creatUserService = async ({ firstName, lastName, email, password, r
 
     return await newUser.save();
 };
+
+export const loginService = async (email, password) => {
+    const user = await User.findOne({ email }).select('+password');
+    
+    if (!user) {
+        throw new AppError("Invalid email or password", 401);
+    }
+    
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    
+    if (!isPasswordValid) {
+        throw new AppError("Invalid email or password", 401);
+    }
+    
+    return user;
+};

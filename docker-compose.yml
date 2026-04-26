@@ -1,0 +1,42 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: taskiq-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build:
+      context: ./app/backend
+      dockerfile: Dockerfile
+    container_name: taskiq-backend
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    environment:
+      PORT: 5000
+      DATABASE_URL: mongodb://mongo:27017/taskiq
+      JWT_SECRET: taskiq_super_secret_change_me
+      JWT_EXPIRES_IN: 7d
+      FRONTEND_URLS: http://localhost:5173,http://frontend
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build:
+      context: ./app/frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:5000/api-v1
+    container_name: taskiq-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+
+volumes:
+  mongo_data:

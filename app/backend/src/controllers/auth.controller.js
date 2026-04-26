@@ -62,3 +62,19 @@ export const login = async (req, res) => {
         });
     }
 };
+
+export const me = async (req, res) => {
+    try {
+        const user = req.user.toObject ? req.user.toObject() : req.user;
+
+        return res.status(200).json({
+            status: "success",
+            data: { user },
+        });
+    } catch (error) {
+        res.status(error.statusCode || 500).json({
+            status: error.status || "error",
+            message: error.message,
+        });
+    }
+};

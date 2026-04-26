@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { authApi } from '../services/api.js';
 
 const AuthContext = createContext(null);
@@ -52,6 +52,26 @@ export function AuthProvider({ children }) {
 			setIsLoading(false);
 		}
 	};
+
+	useEffect(() => {
+		const hydrateUserFromDb = async () => {
+			if (!token) return;
+
+			try {
+				const response = await authApi.me();
+				const dbUser = response.data?.data?.user;
+
+				if (dbUser) {
+					localStorage.setItem('taskiq_user', JSON.stringify(dbUser));
+					setUser(dbUser);
+				}
+			} catch (_error) {
+				clearSession();
+			}
+		};
+
+		hydrateUserFromDb();
+	}, [token]);
 
 	const value = useMemo(
 		() => ({

@@ -4,6 +4,7 @@ import { formatDate, getPriorityClass } from '../../utils/helpers.js';
 
 export default function TaskItem({ task, onEdit, onDelete, onToggleStatus }) {
 	const isCompleted = task.status === 'completed';
+	const displayedPriority = task.smart?.computedPriority || task.priority;
 
 	return (
 		<article className="rounded-xl border border-taskiq-border bg-white p-4 shadow-taskiq">
@@ -13,7 +14,7 @@ export default function TaskItem({ task, onEdit, onDelete, onToggleStatus }) {
 					<p className="mt-1 text-xs text-taskiq-soft">Due {formatDate(task.deadline)}</p>
 				</div>
 
-				<span className={`rounded-full px-2 py-1 text-xs font-semibold ${getPriorityClass(task.priority)}`}>{task.priority}</span>
+				<span className={`rounded-full px-2 py-1 text-xs font-semibold ${getPriorityClass(displayedPriority)}`}>{displayedPriority}</span>
 			</div>
 
 			{task.description ? <p className="mb-4 text-sm text-taskiq-soft">{task.description}</p> : null}

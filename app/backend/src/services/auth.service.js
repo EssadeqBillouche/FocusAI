@@ -1,9 +1,9 @@
-import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import AppError from "../utils/AppError.js";
+import { createUser, findUserByEmail } from "../repositories/user.repository.js";
 
 export const creatUserService = async ({ firstName, lastName, email, password, role }) => {
-    const existUser = await User.findOne({ email });
+    const existUser = await findUserByEmail(email);
     
     if (existUser) {
         throw new AppError("User exists with this email", 409);
@@ -11,19 +11,19 @@ export const creatUserService = async ({ firstName, lastName, email, password, r
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = new User({
+    const newUser = {
         firstName,
         lastName,
         email,
         password: hashedPassword,
         role: role || "user"
-    });
+    };
 
-    return await newUser.save();
+    return await createUser(newUser);
 };
 
 export const loginService = async (email, password) => {
-    const user = await User.findOne({ email }).select('+password');
+    const user = await findUserByEmail(email).select('+password');
     
     if (!user) {
         throw new AppError("Invalid email or password", 401);

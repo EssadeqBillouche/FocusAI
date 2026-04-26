@@ -1,55 +1,149 @@
-import axios from 'axios';
+const API_URL = (import.meta.env.VITE_API_URL || '/api-v1').trim();
 
-const apiBaseUrl = (import.meta.env.VITE_API_URL || '/api-v1').trim();
-
-const apiClient = axios.create({
-	baseURL: apiBaseUrl,
-	headers: {
-		'Content-Type': 'application/json',
-	},
-});
-
-apiClient.interceptors.request.use((config) => {
+const getAuthHeaders = () => {
 	const token = localStorage.getItem('taskiq_token');
 
-	if (token) {
-		config.headers.Authorization = `Bearer ${token}`;
-	}
+	return {
+		'Content-Type': 'application/json',
+		...(token ? { Authorization: `Bearer ${token}` } : {}),
+	};
+};
 
-	return config;
-});
+const handleResponse = async (res) => {
+	const data = await res.json().catch(() => null);
 
-apiClient.interceptors.response.use(
-	(response) => response,
-	(error) => {
-		if (error?.response?.status === 401) {
+	if (!res.ok) {
+		if (res.status === 401) {
 			localStorage.removeItem('taskiq_token');
 			localStorage.removeItem('taskiq_user');
 		}
 
-		return Promise.reject(error);
+		const error = new Error(data?.message || 'Request failed');
+		error.response = { status: res.status, data };
+		throw error;
 	}
-);
+
+	return { status: res.status, data };
+};
 
 export const authApi = {
-	register: (payload) => apiClient.post('/auth/register', payload),
-	login: (payload) => apiClient.post('/auth/login', payload),
-	me: () => apiClient.get('/auth/me'),
+	register: async (payload) => {
+		const res = await fetch(`${API_URL}/auth/register`, {
+			method: 'POST',
+			headers: getAuthHeaders(),
+			body: JSON.stringify(payload),
+		});
+
+		return handleResponse(res);
+	},
+
+	login: async (payload) => {
+		const res = await fetch(`${API_URL}/auth/login`, {
+			method: 'POST',
+			headers: getAuthHeaders(),
+			body: JSON.stringify(payload),
+		});
+
+		return handleResponse(res);
+	},
+
+	me: async () => {
+		const res = await fetch(`${API_URL}/auth/me`, {
+			method: 'GET',
+			headers: getAuthHeaders(),
+		});
+
+		return handleResponse(res);
+	},
 };
 
 export const tasksApi = {
-	getAll: (params = {}) => apiClient.get('/tasks', { params }),
-	getSmartPriority: (params = {}) => apiClient.get('/tasks/smart-priority', { params }),
-	getRecommendations: (limit = 5) => apiClient.get('/tasks/recommendations', { params: { limit } }),
-	getById: (taskId) => apiClient.get(`/tasks/${taskId}`),
-	create: (payload) => apiClient.post('/tasks', payload),
-	update: (taskId, payload) => apiClient.patch(`/tasks/${taskId}`, payload),
-	delete: (taskId) => apiClient.delete(`/tasks/${taskId}`),
+	getAll: async (params = {}) => {
+		const query = new URLSearchParams(params).toString();
+		const res = await fetch(`${API_URL}/tasks${query ? `?${query}` : ''}`, {
+			method: 'GET',
+			headers: getAuthHeaders(),
+		});
+
+		return handleResponse(res);
+	},
+
+	getSmartPriority: async (params = {}) => {
+		const query = new URLSearchParams(params).toString();
+		const res = await fetch(`${API_URL}/tasks/smart-priority${query ? `?${query}` : ''}`, {
+			method: 'GET',
+			headers: getAuthHeaders(),
+		});
+
+		return handleResponse(res);
+	},
+
+	getRecommendations: async (limit = 5) => {
+		const res = await fetch(`${API_URL}/tasks/recommendations?limit=${limit}`, {
+			method: 'GET',
+			headers: getAuthHeaders(),
+		});
+
+		return handleResponse(res);
+	},
+
+	getById: async (taskId) => {
+		const res = await fetch(`${API_URL}/tasks/${taskId}`, {
+			method: 'GET',
+			headers: getAuthHeaders(),
+		});
+
+		return handleResponse(res);
+	},
+
+	create: async (payload) => {
+		const res = await fetch(`${API_URL}/tasks`, {
+			method: 'POST',
+			headers: getAuthHeaders(),
+			body: JSON.stringify(payload),
+		});
+
+		return handleResponse(res);
+	},
+
+	update: async (taskId, payload) => {
+		const res = await fetch(`${API_URL}/tasks/${taskId}`, {
+			method: 'PATCH',
+			headers: getAuthHeaders(),
+			body: JSON.stringify(payload),
+		});
+
+		return handleResponse(res);
+	},
+
+	delete: async (taskId) => {
+		const res = await fetch(`${API_URL}/tasks/${taskId}`, {
+			method: 'DELETE',
+			headers: getAuthHeaders(),
+		});
+
+		return handleResponse(res);
+	},
 };
 
 export const dashboardApi = {
-	getStats: () => apiClient.get('/dashboard/stats'),
-	getInsights: () => apiClient.get('/dashboard/insights'),
+	getStats: async () => {
+		const res = await fetch(`${API_URL}/dashboard/stats`, {
+			method: 'GET',
+			headers: getAuthHeaders(),
+		});
+
+		return handleResponse(res);
+	},
+
+	getInsights: async () => {
+		const res = await fetch(`${API_URL}/dashboard/insights`, {
+			method: 'GET',
+			headers: getAuthHeaders(),
+		});
+
+		return handleResponse(res);
+	},
 };
 
-export default apiClient;
+export default { authApi, tasksApi, dashboardApi };

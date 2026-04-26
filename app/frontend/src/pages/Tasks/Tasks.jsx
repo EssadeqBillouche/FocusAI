@@ -4,6 +4,7 @@ import AppShell from '../../components/layout/AppShell.jsx';
 import TaskForm from '../../components/tasks/TaskForm.jsx';
 import TaskFilters from '../../components/tasks/TaskFilters.jsx';
 import TaskList from '../../components/tasks/TaskList.jsx';
+import RecommendedTasks from '../../components/tasks/RecommendedTasks.jsx';
 import { tasksApi } from '../../services/api.js';
 
 const defaultFilters = {
@@ -18,6 +19,7 @@ export default function Tasks() {
 	const [filters, setFilters] = useState(defaultFilters);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [editingTask, setEditingTask] = useState(null);
+	const [recommendations, setRecommendations] = useState([]);
 
 	const queryParams = useMemo(() => {
 		const params = {};
@@ -31,8 +33,13 @@ export default function Tasks() {
 
 	const fetchTasks = async () => {
 		try {
-			const response = await tasksApi.getAll(queryParams);
-			setTasks(response.data?.data?.tasks || []);
+			const [tasksResponse, recommendationsResponse] = await Promise.all([
+				tasksApi.getSmartPriority(queryParams),
+				tasksApi.getRecommendations(5),
+			]);
+
+			setTasks(tasksResponse.data?.data?.tasks || []);
+			setRecommendations(recommendationsResponse.data?.data?.recommendations || []);
 		} catch (error) {
 			toast.error(error?.response?.data?.message || 'Failed to fetch tasks');
 		}
@@ -88,6 +95,8 @@ export default function Tasks() {
 		<AppShell title="Q3 Deliverables" subtitle="Design system refinement and core feature implementation.">
 			<div className="space-y-6">
 				<TaskFilters filters={filters} onChange={setFilters} />
+
+				<RecommendedTasks tasks={recommendations} />
 
 				<TaskForm
 					mode={editingTask ? 'edit' : 'create'}

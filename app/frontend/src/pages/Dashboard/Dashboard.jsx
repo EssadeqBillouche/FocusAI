@@ -12,6 +12,9 @@ const initialStats = {
 	completed: 0,
 	pending: 0,
 	completionRate: 0,
+	chartData: [],
+	priorityData: [],
+	recommendedTasks: [],
 	urgentTasks: [],
 };
 
@@ -21,8 +24,8 @@ export default function Dashboard() {
 	useEffect(() => {
 		const loadDashboard = async () => {
 			try {
-				const response = await dashboardApi.getStats();
-				setStats(response.data?.data?.stats || initialStats);
+				const response = await dashboardApi.getInsights();
+				setStats(response.data?.data?.insights || initialStats);
 			} catch (error) {
 				toast.error(error?.response?.data?.message || 'Failed to load dashboard');
 			}
@@ -41,8 +44,8 @@ export default function Dashboard() {
 			</div>
 
 			<div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[2fr_1fr]">
-				<Chart completed={stats.completed} pending={stats.pending} />
-				<Summary urgentTasks={stats.urgentTasks} />
+				<Chart chartData={stats.chartData} priorityData={stats.priorityData} completionRate={stats.completionRate} />
+				<Summary urgentTasks={stats.recommendedTasks} />
 			</div>
 		</AppShell>
 	);

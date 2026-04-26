@@ -2,13 +2,13 @@ import mongoose from "mongoose";
 
 
 const UserShema = mongoose.Schema({
-    firstName : {type: String, require : true, minlenght :3},
-    lastName : {type: String, require : true},
-    email : {type : String, require : true},
-    password :{type : String, require: true},
-    role : {type : String, default : "User"}
+    firstName : {type: String, required : true, minlength :3, trim: true},
+    lastName : {type: String, required : true, trim: true},
+    email : {type : String, required : true, unique: true, lowercase: true, trim: true},
+    password :{type : String, required: true, select: false},
+    role : {type : String, enum: ["user", "admin"], default : "user"}
 
-})
+}, { timestamps: true })
 
 const User = mongoose.model("User", UserShema);
 

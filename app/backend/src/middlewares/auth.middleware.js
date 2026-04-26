@@ -17,9 +17,14 @@ export const protectRoute = async (req, res, next) => {
 
         // 2. Verify the token
         const decoded = verifyToken(token);
+        const userId = decoded.userId || decoded.id;
+
+        if (!userId) {
+            throw new AppError("Invalid token payload.", 401);
+        }
 
         // 3. Check if user still exists (in case they were deleted since the token was issued)
-        const currentUser = await User.findById(decoded.id);
+        const currentUser = await User.findById(userId);
         if (!currentUser) {
             throw new AppError("The user belonging to this token no longer exists.", 401);
         }
@@ -28,9 +33,6 @@ export const protectRoute = async (req, res, next) => {
         req.user = currentUser;
         next();
     } catch (error) {
-        res.status(error.statusCode || 401).json({
-            status: "error",
-            message: error.message || "Invalid or expired token"
-        });
+        next(error);
     }
 };

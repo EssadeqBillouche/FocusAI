@@ -38,6 +38,8 @@ export const authApi = {
 
 export const tasksApi = {
 	getAll: (params = {}) => apiClient.get('/tasks', { params }),
+	getSmartPriority: (params = {}) => apiClient.get('/tasks/smart-priority', { params }),
+	getRecommendations: (limit = 5) => apiClient.get('/tasks/recommendations', { params: { limit } }),
 	getById: (taskId) => apiClient.get(`/tasks/${taskId}`),
 	create: (payload) => apiClient.post('/tasks', payload),
 	update: (taskId, payload) => apiClient.patch(`/tasks/${taskId}`, payload),
@@ -46,6 +48,7 @@ export const tasksApi = {
 
 export const dashboardApi = {
 	getStats: () => apiClient.get('/dashboard/stats'),
+	getInsights: () => apiClient.get('/dashboard/insights'),
 };
 
 export default apiClient;

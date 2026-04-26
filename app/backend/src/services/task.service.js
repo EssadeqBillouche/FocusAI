@@ -1,14 +1,17 @@
 import AppError from '../utils/AppError.js';
 import {
-	countTasksByFilter,
 	createTask,
 	deleteTaskByIdAndUser,
 	findTaskByIdAndUser,
 	findTasks,
-	findUrgentTasks,
 	updateTaskByIdAndUser,
 } from '../repositories/task.repository.js';
-import { enrichTaskWithSmartData, sortBySmartScore } from './smart.service.js';
+import {
+	buildDashboardInsights,
+	enrichTaskWithSmartData,
+	getRecommendedTasks,
+	sortBySmartScore,
+} from './smart.service.js';
 
 const buildTaskFilter = (userId, query = {}) => {
 	const filter = { userId };
@@ -81,20 +84,36 @@ export const deleteTaskService = async (userId, taskId) => {
 };
 
 export const getDashboardStatsService = async (userId) => {
-	const [total, completed, pending] = await Promise.all([
-		countTasksByFilter({ userId }),
-		countTasksByFilter({ userId, status: 'completed' }),
-		countTasksByFilter({ userId, status: 'pending' }),
-	]);
-
-	const urgentLimitDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
-	const urgentTasks = await findUrgentTasks(userId, urgentLimitDate, 5);
+	const tasks = await findTasks({ userId }, { createdAt: -1 });
+	const smartTasks = tasks.map((task) => enrichTaskWithSmartData(task.toObject()));
+	const insights = buildDashboardInsights(smartTasks);
 
 	return {
-		total,
-		completed,
-		pending,
-		completionRate: total ? Number(((completed / total) * 100).toFixed(2)) : 0,
-		urgentTasks: urgentTasks.map((task) => enrichTaskWithSmartData(task.toObject())),
+		...insights,
+		urgentTasks: getRecommendedTasks(smartTasks, 5),
+	};
+};
+
+export const getSmartPriorityTasksService = async (userId, query = {}) => {
+	const filter = buildTaskFilter(userId, query);
+	const tasks = await findTasks(filter, { deadline: 1, createdAt: 1 });
+
+	return tasks.map((task) => enrichTaskWithSmartData(task.toObject()));
+};
+
+export const getTaskRecommendationsService = async (userId, limit = 5) => {
+	const tasks = await findTasks({ userId }, { deadline: 1, createdAt: 1 });
+	const smartTasks = tasks.map((task) => enrichTaskWithSmartData(task.toObject()));
+
+	return getRecommendedTasks(smartTasks, Number(limit) || 5);
+};
+
+export const getDashboardInsightsService = async (userId) => {
+	const tasks = await findTasks({ userId }, { createdAt: -1 });
+	const smartTasks = tasks.map((task) => enrichTaskWithSmartData(task.toObject()));
+
+	return {
+		...buildDashboardInsights(smartTasks),
+		recommendedTasks: getRecommendedTasks(smartTasks, 5),
 	};
 };

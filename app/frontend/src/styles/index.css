@@ -1,0 +1,16 @@
+html,
+body,
+#root {
+	min-height: 100%;
+}
+
+body {
+	margin: 0;
+	background: #faf9f8;
+	color: #1a1c1c;
+	font-family: Manrope, sans-serif;
+}
+
+* {
+	box-sizing: border-box;
+}
